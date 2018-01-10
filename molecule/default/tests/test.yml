@@ -1,0 +1,4 @@
+---
+- hosts: allroles:
+    - role: boss-ansible-role-swapfilebossjones__user: vagrant
+      bossjones__group: vagrant
