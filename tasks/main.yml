@@ -1,2 +1,61 @@
 ---
 # tasks file for bossjones.swapfile
+
+# FIXME: Convert from this
+# sudo fallocate -l 4G /swapfile && \
+# sudo chmod 600 /swapfile && \
+# sudo ls -lh /swapfile && \
+# sudo mkswap /swapfile && \
+# sudo swapon /swapfile && \
+# sudo swapon -s && \
+# free -m && \
+
+- name: lookup architecture
+  set_fact: architecture="{{ ((ansible_architecture|truncate(3,true,'')) == 'arm') | ternary('ARM','X86') }}"
+
+- name: show architecture
+  debug: msg="architecture is set to {{ architecture }}"
+
+- name: Install pkg deps needed to create swapfiles
+  apt:
+    name: "{{item}}"
+    state: present
+  with_items: "{{boss__swapfile_platform[architecture]['dep_packages']}}"
+
+- name: Write swapfile
+  command: |
+    {% if boss__swapfile_use_dd %}
+    dd if=/dev/zero of={{ boss__swapfile_location }} bs=1M count={{ boss__swapfile_size }} creates={{ boss__swapfile_location }}
+    {% else %}
+    fallocate -l {{ boss__swapfile_size }} {{ boss__swapfile_location }} creates={{ boss__swapfile_location }}
+    {% endif %}
+  register: write_swapfile
+  changed_when: False
+  when: boss__swapfile_size != false
+
+- name: Set swapfile permissions
+  file: path={{ boss__swapfile_location }} mode=0600
+  when: boss__swapfile_size != false
+
+- name: Create swapfile
+  command: mkswap {{ boss__swapfile_location }}
+  register: create_swapfile
+  when: boss__swapfile_size != false and write_swapfile.changed
+
+- name: Enable swapfile
+  command: swapon {{ boss__swapfile_location }}
+  when: boss__swapfile_size != false and create_swapfile.changed
+
+- name: Add swapfile to /etc/fstab
+  lineinfile: dest=/etc/fstab line="{{ boss__swapfile_location }}   none    swap    sw    0   0" state=present
+  when: boss__swapfile_size != false
+
+- name: Configure vm.swappiness
+  lineinfile: dest=/etc/sysctl.conf line="vm.swappiness = {{ boss__swapfile_swappiness }}" regexp="^vm.swappiness[\s]?=" state=present
+  notify: Reload sysctl
+  when: boss__swapfile_swappiness != false
+
+- name: Configure vm.vfs_cache_pressure
+  lineinfile: dest=/etc/sysctl.conf line="vm.vfs_cache_pressure = {{ boss__swapfile_vfs_cache_pressure }}" regexp="^vm.vfs_cache_pressure[\s]?=" state=present
+  notify: Reload sysctl
+  when: boss__swapfile_vfs_cache_pressure != false

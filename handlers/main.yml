@@ -1,2 +1,5 @@
 ---
 # handlers file for bossjones.swapfile
+
+- name: Reload sysctl
+  command: sysctl -p

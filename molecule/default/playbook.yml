@@ -2,5 +2,7 @@
 - name: Converge
   hosts: all
   roles:
-    - role: boss-ansible-role-swapfilebossjones__user: vagrant
+    - role: boss-ansible-role-swapfile
+      bossjones__user: vagrant
       bossjones__group: vagrant
+

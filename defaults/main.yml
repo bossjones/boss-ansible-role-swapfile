@@ -1,2 +1,15 @@
 ---
 # defaults file for bossjones.swapfile
+boss__swapfile_location: /swapfile
+boss__swapfile_size: 512MB
+boss__swapfile_swappiness: False
+boss__swapfile_vfs_cache_pressure: False
+boss__swapfile_use_dd: False
+
+boss__swapfile_platform:
+  ARM:
+    dep_packages: []
+  X86:
+    dep_packages:
+      - util-linux
+      - mount
