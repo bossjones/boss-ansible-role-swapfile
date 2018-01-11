@@ -46,6 +46,10 @@
   command: swapon {{ boss__swapfile_location }}
   when: boss__swapfile_size != false and create_swapfile.changed
 
+- name: Enable swapfile all
+  command: swapon -a
+  when: boss__swapfile_size != false and create_swapfile.changed
+
 - name: Add swapfile to /etc/fstab
   lineinfile: dest=/etc/fstab line="{{ boss__swapfile_location }}   none    swap    sw    0   0" state=present
   when: boss__swapfile_size != false
